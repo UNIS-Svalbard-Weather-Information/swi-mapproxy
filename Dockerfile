@@ -29,71 +29,34 @@ RUN apt-get update && \
 
 # Install MapProxy and its dependencies
 RUN apt-get update && \
-    apt-get install libgeos-dev libgdal-dev libxml2-dev libxslt-dev -y && \
-    rm -rf /var/lib/apt/lists/* && \
-    pip install --no-cache-dir --break-system-packages MapProxy
-
-
+    apt-get install libgeos-dev libgdal-dev libxml2-dev libxslt-dev mapproxy -y && \
+    rm -rf /var/lib/apt/lists/*
+# pip install --no-cache-dir --break-system-packages MapProxy azure-storage-blob boto3
 
 # Install uWSGI
 RUN pip install --no-cache-dir --break-system-packages uwsgi
 
-# Create folders for MapProxy configuration, cache and data
-RUN mkdir -p /mapproxy/config /mapproxy/cache /mapproxy/data
+# Create a non-root user and group
+RUN useradd -m mapproxy && \
+    mkdir -p /mapproxy/config /mapproxy/user_config /mapproxy/data && \
+    chown -R mapproxy:mapproxy /mapproxy
+
+# Switch to the non-root user
+USER mapproxy
 WORKDIR /mapproxy
 
 # Copy default MapProxy configuration files
 COPY config.py /mapproxy/
 COPY uwsgi.ini /mapproxy/
-COPY mapproxy.yaml /mapproxy/config/
+COPY mapproxy.yaml /mapproxy/user_config/
+
+RUN if [ -d /mapproxy/user_config ] && [ "$(ls -A /mapproxy/user_config)" ]; then \
+    ln -s /mapproxy/user_config/* /mapproxy/config/; \
+    fi
+
 
 # Expose the default MapProxy port and start uWSGI with the provided configuration
 EXPOSE 8080
 EXPOSE 9191
+
 CMD ["uwsgi", "--ini", "uwsgi.ini"]
-
-# EXPOSE 8080
-# CMD ["mapproxy-util", "serve-develop", "config/mapproxy.yaml"]
-
-
-# # Use a Debian-based Python 3.11 slim image
-# FROM python:3.11.14-slim AS build
-
-# # Install only system dependencies (not available via pip)
-# RUN apt-get update && \
-#     apt-get install -y --no-install-recommends \
-#     git \
-#     libproj25 \
-#     && apt-get clean \
-#     && rm -rf /var/lib/apt/lists/*
-
-# # Install Python dependencies via pip
-# RUN pip install --no-cache-dir \
-#     pillow \
-#     pyyaml \
-#     mapnik
-
-# # Clone and install pymapnik
-# # RUN git clone https://github.com/mapnik/pymapnik.git && \
-# #     cd pymapnik && \
-# #     python setup.py install && \
-# #     rm -rf /pymapnik
-
-# # Verify Mapnik installation
-# RUN python -c 'import mapnik; print("Mapnik is installed correctly!")' || \
-#     (echo "Mapnik installation failed" && exit 1)
-
-# # Install MapProxy
-# RUN pip install --no-cache-dir mapproxy
-
-# # Create and set the working directory
-# WORKDIR /mapproxy
-
-# # Final stage: use the build stage as the base
-# FROM build
-
-# # Expose the default MapProxy port
-# EXPOSE 8080
-
-# # Command to run MapProxy in development mode
-# CMD ["mapproxy-util", "serve-develop", "mapproxy.yaml"]
