@@ -41,22 +41,25 @@ RUN useradd -m mapproxy && \
     mkdir -p /mapproxy/config /mapproxy/user_config /mapproxy/data /mapproxy/metadata && \
     chown -R mapproxy:mapproxy /mapproxy
 
+COPY run.sh /mapproxy/
+RUN chmod +x /mapproxy/run.sh
+
 # Switch to the non-root user
 USER mapproxy
 WORKDIR /mapproxy
 
 # Copy default MapProxy configuration files
 COPY config.py /mapproxy/
-COPY uwsgi.ini /mapproxy/
-COPY mapproxy.yaml /mapproxy/user_config/
+COPY uwsgi.ini.default /mapproxy/
+COPY mapproxy.yaml.default /mapproxy/user_config/
 
-RUN if [ -d /mapproxy/user_config ] && [ "$(ls -A /mapproxy/user_config)" ]; then \
-    ln -s /mapproxy/user_config/* /mapproxy/config/; \
-    fi
+# RUN if [ -d /mapproxy/user_config ] && [ "$(ls -A /mapproxy/user_config)" ]; then \
+#     ln -s /mapproxy/user_config/* /mapproxy/config/; \
+#     fi
 
 
 # Expose the default MapProxy port and start uWSGI with the provided configuration
 EXPOSE 8080
 EXPOSE 9191
 
-CMD ["uwsgi", "--ini", "uwsgi.ini"]
+CMD ["/mapproxy/run.sh"]
