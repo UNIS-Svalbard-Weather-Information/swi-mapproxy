@@ -29,17 +29,17 @@ else
     ln -sf /mapproxy/uwsgi.ini.default /mapproxy/uwsgi.ini
 fi
 
-# Simplink mapproxy.yaml from user config if it exists else from repo config or default
+# Generate mapproxy.yaml configuration
 echo "Setting up mapproxy configuration..."
 if [ -f "/mapproxy/user_config/mapproxy.yaml" ]; then
     echo "Using mapproxy configuration from user_config"
-    ln -sf /mapproxy/user_config/mapproxy.yaml /mapproxy/config/mapproxy.yaml
+    envsubst < /mapproxy/user_config/mapproxy.yaml > /mapproxy/config/mapproxy.yaml
 elif [ -f "/mapproxy/swi-mapproxy-configuration/mapproxy.yaml" ]; then
     echo "Using mapproxy configuration from repository"
-    ln -sf /mapproxy/swi-mapproxy-configuration/mapproxy.yaml /mapproxy/config/mapproxy.yaml
+    envsubst < /mapproxy/swi-mapproxy-configuration/mapproxy.yaml > /mapproxy/config/mapproxy.yaml
 else
     echo "Using default mapproxy configuration"
-    ln -sf /mapproxy/mapproxy.yaml.default /mapproxy/config/mapproxy.yaml
+    envsubst < /mapproxy/mapproxy.yaml.default > /mapproxy/config/mapproxy.yaml
 fi
 
 echo "Starting MapProxy server..."
