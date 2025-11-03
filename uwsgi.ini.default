@@ -20,6 +20,7 @@ cheaper-step = 1
 
 
 ; Mount MapProxy at /mapserver
+chdir = /mapproxy
 mount = /=config:application
 manage-script-name = true
 
