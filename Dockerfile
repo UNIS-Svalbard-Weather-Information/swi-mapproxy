@@ -38,7 +38,7 @@ RUN pip install --no-cache-dir --break-system-packages uwsgi
 
 # Create a non-root user and group
 RUN useradd -m mapproxy && \
-    mkdir -p /mapproxy/config /mapproxy/user_config /mapproxy/data && \
+    mkdir -p /mapproxy/config /mapproxy/user_config /mapproxy/data /mapproxy/metadata && \
     chown -R mapproxy:mapproxy /mapproxy
 
 # Switch to the non-root user
