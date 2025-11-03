@@ -42,5 +42,11 @@ else
     envsubst < /mapproxy/mapproxy.yaml.default > /mapproxy/config/mapproxy.yaml
 fi
 
+# Copy Metadata if exists
+if [ -d "/mapproxy/swi-mapproxy-configuration/metadata" ]; then
+    echo "Copying metadata files..."
+    cp -r /mapproxy/swi-mapproxy-configuration/metadata/* /mapproxy/metadata/
+fi
+
 echo "Starting MapProxy server..."
 uwsgi --ini /mapproxy/uwsgi.ini
