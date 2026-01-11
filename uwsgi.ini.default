@@ -28,7 +28,7 @@ manage-script-name = true
 static-map = /metadata=/mapproxy/metadata
 
 ; Use reload
---touch-reload = /mapproxy/data/reload.trigger
+touch-reload = /mapproxy/data/reload.trigger
 
 
 ; Enable stats server on port 9191
