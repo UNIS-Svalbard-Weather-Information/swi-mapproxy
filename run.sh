@@ -48,5 +48,8 @@ if [ -d "/mapproxy/swi-mapproxy-configuration/metadata" ]; then
     cp -r /mapproxy/swi-mapproxy-configuration/metadata/* /mapproxy/metadata/
 fi
 
+mkdir /mapproxy/data/
+touch /mapproxy/data/reload.trigger
+
 echo "Starting MapProxy server..."
 uwsgi --ini /mapproxy/uwsgi.ini
