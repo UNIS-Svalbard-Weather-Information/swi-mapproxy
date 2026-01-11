@@ -15,6 +15,8 @@ docker build -t swi-mapproxy .
 docker run -p 8080:8080 -p 9191:9191 swi-mapproxy
 ```
 
+If needed to trigger a reload from WSGI, it is possible to `touch /mapproxy/data/reload.trigger`
+
 ## Requirements
 
 - Docker
