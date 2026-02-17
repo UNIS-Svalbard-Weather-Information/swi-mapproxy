@@ -9,8 +9,6 @@ max-requests = 5000
 uid = mapproxy
 gid = mapproxy
 
-
-
 #  Enable cheaper mode
 cheaper-algo = spare
 cheaper = 1
@@ -30,6 +28,9 @@ static-map = /metadata=/mapproxy/metadata
 ; Use reload
 touch-reload = /mapproxy/data/reload.trigger
 
+
+;health check enpoint
+health-check = /health
 
 ; Enable stats server on port 9191
 ; stats = :9191
