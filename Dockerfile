@@ -32,22 +32,22 @@ RUN apt-get update && \
 RUN apt-get update && \
     apt-get install libgeos-dev libgdal-dev libxml2-dev libxslt-dev mapproxy -y && \
     rm -rf /var/lib/apt/lists/*
-# pip install --no-cache-dir --break-system-packages MapProxy azure-storage-blob boto3
+# pip install --no-cache-dir --break-system-packages MapProxy azure-storage-blob boto3 redis
 
 # Install uWSGI
 RUN pip install --no-cache-dir --break-system-packages uwsgi
 
 # Create a non-root user and group
 RUN useradd -m mapproxy && \
-    mkdir -p /mapproxy/config /mapproxy/user_config /mapproxy/data /mapproxy/metadata && \
+    mkdir -p /mapproxy/config /mapproxy/user_config /mapproxy/data /mapproxy/metadata /mapproxy/mbtiles && \
     chown -R mapproxy:mapproxy /mapproxy
-
-COPY run.sh /mapproxy/
-RUN chmod +x /mapproxy/run.sh
 
 # Switch to the non-root user
 USER mapproxy
 WORKDIR /mapproxy
+
+COPY run.sh /mapproxy/
+RUN chmod +x /mapproxy/run.sh
 
 # Copy default MapProxy configuration files
 COPY config.py /mapproxy/
