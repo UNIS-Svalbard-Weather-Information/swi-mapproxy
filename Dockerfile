@@ -42,12 +42,12 @@ RUN useradd -m mapproxy && \
     mkdir -p /mapproxy/config /mapproxy/user_config /mapproxy/data /mapproxy/metadata /mapproxy/mbtiles && \
     chown -R mapproxy:mapproxy /mapproxy
 
+COPY run.sh /mapproxy/
+RUN chmod +x /mapproxy/run.sh 
+
 # Switch to the non-root user
 USER mapproxy
 WORKDIR /mapproxy
-
-COPY run.sh /mapproxy/
-RUN chmod +x /mapproxy/run.sh
 
 # Copy default MapProxy configuration files
 COPY config.py /mapproxy/
