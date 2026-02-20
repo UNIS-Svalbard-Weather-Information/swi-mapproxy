@@ -2,7 +2,7 @@
 HEALTHY=true
 
 # Query stats
-STATS=$(uwsgi --connect-and-read 127.0.0.1:1717)
+STATS=$(uwsgi --connect-and-read 127.0.0.1:9191)
 if [ -z "$STATS" ]; then
   echo "Stats server unreachable"
   exit 1
