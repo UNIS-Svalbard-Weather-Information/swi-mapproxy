@@ -7,6 +7,7 @@ RUN apt-get update && \
     python3 \
     python3-pip \
     curl \
+    jq \
     gettext \
     git && \
     rm -rf /var/lib/apt/lists/*
@@ -44,7 +45,8 @@ RUN useradd -m mapproxy && \
     chown -R mapproxy:mapproxy /mapproxy
 
 COPY run.sh /mapproxy/
-RUN chmod +x /mapproxy/run.sh 
+COPY health-check.sh /mapproxy/
+RUN chmod +x /mapproxy/run.sh /mapproxy/health-check.sh
 
 # Switch to the non-root user
 USER mapproxy
