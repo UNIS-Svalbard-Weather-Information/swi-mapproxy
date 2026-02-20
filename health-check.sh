@@ -1,45 +1,14 @@
-#!/bin/bash
-HEALTHY=true
+#!/bin/sh
 
-# Query stats
-STATS=$(uwsgi --connect-and-read 127.0.0.1:9191)
-if [ -z "$STATS" ]; then
-  echo "Stats server unreachable"
-  exit 1
-fi
+# Endpoint to check
+ENDPOINT="http://127.0.0.1:8080/service?REQUEST=GetCapabilities&SERVICE=WMS"
 
-# Check worker count
-WORKERS=$(echo "$STATS" | jq '[.workers[]] | length')
-if [ "$WORKERS" -lt 1 ] || [ "$WORKERS" -gt 10 ]; then
-  echo "Worker count abnormal: $WORKERS"
-  HEALTHY=false
-fi
+# Use curl to check the endpoint
+response=$(curl -s -o /dev/null -w "%{http_code}" "$ENDPOINT")
 
-# Check listen queue
-LISTEN_QUEUE=$(echo "$STATS" | jq '.listen_queue')
-if [ "$LISTEN_QUEUE" -gt 50 ]; then
-  echo "High listen queue: $LISTEN_QUEUE"
-  HEALTHY=false
-fi
-
-# Check harakiri events
-HARAKIRI=$(echo "$STATS" | jq '.harakiri_count')
-if [ "$HARAKIRI" -gt 5 ]; then
-  echo "Harakiri events detected: $HARAKIRI"
-  HEALTHY=false
-fi
-
-# Check exceptions
-EXCEPTIONS=$(echo "$STATS" | jq '.exceptions')
-if [ "$EXCEPTIONS" -gt 0 ]; then
-  echo "Exceptions detected: $EXCEPTIONS"
-  HEALTHY=false
-fi
-
-if [ "$HEALTHY" = true ]; then
-  echo "uWSGI is healthy"
+# Check if the response is 200
+if [ "$response" -eq 200 ]; then
   exit 0
 else
-  echo "uWSGI is unhealthy"
   exit 1
 fi
