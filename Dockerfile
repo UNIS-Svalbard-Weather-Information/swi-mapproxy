@@ -1,10 +1,13 @@
 ARG PYTHON_VERSION=3.13
 ARG DEBIAN_VERSION=trixie
+ARG MAPPROXY_VERSION=6.0.1
+ARG MAPNIK_VERSION=4.0.7+ds-1
 
 # Builder stage
-FROM debian:${DEBIAN_VERSION}-slim AS builder
+FROM debian:${DEBIAN_VERSION} AS builder
 
 ARG PYTHON_VERSION
+ARG MAPPROXY_VERSION
 
 # Install build dependencies
 RUN apt-get update && \
@@ -13,13 +16,28 @@ RUN apt-get update && \
     python${PYTHON_VERSION} \
     python${PYTHON_VERSION}-dev \
     python3-pip \
+    git \
+    patch \
+    curl \
     && rm -rf /var/lib/apt/lists/*
 
-# Install uWSGI and other Python packages
-RUN pip install --no-cache-dir --break-system-packages uwsgi MapProxy==6.0.1 azure-storage-blob boto3 redis
+# Download MapProxy source to apply the patch for proj4 issue with MapNik
+WORKDIR /tmp
+RUN git clone https://github.com/mapproxy/mapproxy.git && \
+    cd mapproxy && \
+    git checkout ${MAPPROXY_VERSION}
 
-# Print the site-packages path for Python 3.13
-RUN python${PYTHON_VERSION} -c "import site; print(site.getsitepackages())"
+# Download and apply the patch
+RUN curl -sSL https://salsa.debian.org/debian-gis-team/mapproxy/-/raw/master/debian/patches/mapnik.patch -o /tmp/mapnik.patch && \
+    cd /tmp/mapproxy && \
+    patch -p1 < /tmp/mapnik.patch
+
+# Install MapProxy from the patched source
+WORKDIR /tmp/mapproxy
+RUN pip install --no-cache-dir --break-system-packages .
+
+# Install other Python packages
+RUN pip install --no-cache-dir --break-system-packages uwsgi azure-storage-blob boto3 redis
 
 # Copy configuration files and scripts
 COPY config.py /mapproxy/
@@ -32,14 +50,15 @@ COPY health-check.sh /mapproxy/
 FROM debian:trixie-slim
 
 ARG PYTHON_VERSION
+ARG MAPNIK_VERSION
 
 # Install runtime dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     python${PYTHON_VERSION} \
     libpython${PYTHON_VERSION} \
-    libmapnik-dev \
-    mapnik-utils \
+    libmapnik-dev=${MAPNIK_VERSION} \
+    mapnik-utils=${MAPNIK_VERSION} \
     python3-mapnik \
     libgeos-dev \
     libgdal-dev \
