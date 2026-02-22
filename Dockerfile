@@ -1,68 +1,74 @@
-# Use the smallest Debian base image
-FROM debian:latest
+ARG PYTHON_VERSION=3.13
+ARG DEBIAN_VERSION=trixie
 
-# Install Python, pip, and Git
-RUN apt-get update && \
-    apt-get install -y --no-install-recommends \
-    python3 \
-    python3-pip \
-    curl \
-    jq \
-    gettext \
-    git && \
-    rm -rf /var/lib/apt/lists/*
+# Builder stage
+FROM debian:${DEBIAN_VERSION}-slim AS builder
 
-# Set Python 3 as the default Python
-RUN update-alternatives --install /usr/bin/python python /usr/bin/python3 1
+ARG PYTHON_VERSION
 
-# Verify installations
-RUN python --version && \
-    pip --version && \
-    git --version
-
-# Install MapNik and its Python bindings
+# Install build dependencies
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
     build-essential \
-    python3-dev \
+    python${PYTHON_VERSION} \
+    python${PYTHON_VERSION}-dev \
+    python3-pip \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install uWSGI and other Python packages
+RUN pip install --no-cache-dir --break-system-packages uwsgi MapProxy==6.0.1 azure-storage-blob boto3 redis
+
+# Print the site-packages path for Python 3.13
+RUN python${PYTHON_VERSION} -c "import site; print(site.getsitepackages())"
+
+# Copy configuration files and scripts
+COPY config.py /mapproxy/
+COPY uwsgi.ini.default /mapproxy/
+COPY mapproxy.yaml.default /mapproxy/user_config/
+COPY run.sh /mapproxy/
+COPY health-check.sh /mapproxy/
+
+# Runtime stage
+FROM debian:trixie-slim
+
+ARG PYTHON_VERSION
+
+# Install runtime dependencies
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends \
+    python${PYTHON_VERSION} \
+    libpython${PYTHON_VERSION} \
     libmapnik-dev \
     mapnik-utils \
     python3-mapnik \
+    libgeos-dev \
+    libgdal-dev \
+    libxml2-dev \
+    libxslt-dev \
+    curl \
+    ca-certificates \
+    git \
+    gettext-base \
     && rm -rf /var/lib/apt/lists/*
 
-# Install MapProxy and its dependencies
-RUN apt-get update && \
-    apt-get install libgeos-dev libgdal-dev libxml2-dev libxslt-dev mapproxy -y && \
-    rm -rf /var/lib/apt/lists/*
-# pip install --no-cache-dir --break-system-packages MapProxy azure-storage-blob boto3 redis
-
-# Install uWSGI
-RUN pip install --no-cache-dir --break-system-packages uwsgi
+# Copy Python packages and application files from the builder stage
+COPY --from=builder /usr/local/lib/python${PYTHON_VERSION}/dist-packages /usr/local/lib/python${PYTHON_VERSION}/dist-packages
+COPY --from=builder /usr/local/bin /usr/local/bin
+COPY --from=builder /mapproxy /mapproxy
 
 # Create a non-root user and group
 RUN useradd -m mapproxy && \
     mkdir -p /mapproxy/config /mapproxy/user_config /mapproxy/data /mapproxy/metadata /mapproxy/mbtiles && \
     chown -R mapproxy:mapproxy /mapproxy
 
-COPY run.sh /mapproxy/
-COPY health-check.sh /mapproxy/
+# Set permissions for scripts
 RUN chmod +x /mapproxy/run.sh /mapproxy/health-check.sh
 
 # Switch to the non-root user
 USER mapproxy
 WORKDIR /mapproxy
 
-# Copy default MapProxy configuration files
-COPY config.py /mapproxy/
-COPY uwsgi.ini.default /mapproxy/
-COPY mapproxy.yaml.default /mapproxy/user_config/
-
-# RUN if [ -d /mapproxy/user_config ] && [ "$(ls -A /mapproxy/user_config)" ]; then \
-#     ln -s /mapproxy/user_config/* /mapproxy/config/; \
-#     fi
-
-
-# Expose the default MapProxy port and start uWSGI with the provided configuration
+# Expose ports
 EXPOSE 8080
 EXPOSE 9191
 
