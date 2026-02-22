@@ -39,7 +39,7 @@ elif [ -f "/mapproxy/swi-mapproxy-configuration/mapproxy.yaml" ]; then
     envsubst < /mapproxy/swi-mapproxy-configuration/mapproxy.yaml > /mapproxy/config/mapproxy.yaml
 else
     echo "Using default mapproxy configuration"
-    envsubst < /mapproxy/mapproxy.yaml.default > /mapproxy/config/mapproxy.yaml
+    envsubst < /mapproxy/user_config/mapproxy.yaml.default > /mapproxy/config/mapproxy.yaml
 fi
 
 # Copy Metadata if exists
