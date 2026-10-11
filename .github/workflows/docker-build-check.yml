@@ -21,3 +21,15 @@ jobs:
         with:
           context: .
           push: false
+
+  release-script:
+    name: Release tag script tests
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7
+        with:
+          persist-credentials: false
+
+      - name: Run unit tests
+        run: python3 -m unittest discover -s tests -v
