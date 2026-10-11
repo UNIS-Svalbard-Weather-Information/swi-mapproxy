@@ -1,8 +1,8 @@
 ARG PYTHON_VERSION=3.13
 ARG DEBIAN_VERSION=trixie
-ARG MAPPROXY_VERSION=6.0.1
+ARG MAPPROXY_VERSION=7.0.0
 # Commit of the MAPPROXY_VERSION tag: the build checks out the commit, not the movable tag
-ARG MAPPROXY_COMMIT=b082b2bd974a9b6d20e48d514c7ddc735423e739
+ARG MAPPROXY_COMMIT=49de7e7f5ab804da2b90c813e78c602931cad9a5
 ARG MAPNIK_VERSION=4.0.7+ds-1
 
 # Dependency resolution: MapProxy's dependencies and the extra packages, from uv.lock
