@@ -1,0 +1,14 @@
+[project]
+name = "swi-mapproxy"
+version = "0.1.0"
+description = "MapProxy container for the SWI map server: Python dependencies of the image"
+requires-python = ">=3.13"
+# MapProxy itself is installed from source with a patch applied (see Dockerfile and
+# patches/); it is listed here so its dependencies are resolved and locked.
+dependencies = [
+    "azure-storage-blob>=12.0",
+    "boto3>=1.35",
+    "mapproxy==6.0.1",
+    "redis>=5.0",
+    "uwsgi>=2.0",
+]

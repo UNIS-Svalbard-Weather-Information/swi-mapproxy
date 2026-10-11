@@ -1,13 +1,23 @@
 ARG PYTHON_VERSION=3.13
 ARG DEBIAN_VERSION=trixie
 ARG MAPPROXY_VERSION=6.0.1
+# Commit of the MAPPROXY_VERSION tag: the build checks out the commit, not the movable tag
+ARG MAPPROXY_COMMIT=b082b2bd974a9b6d20e48d514c7ddc735423e739
 ARG MAPNIK_VERSION=4.0.7+ds-1
+
+# Dependency resolution: MapProxy's dependencies and the extra packages, from uv.lock
+FROM astral/uv:python3.13-bookworm-slim AS uv
+WORKDIR /swi
+COPY pyproject.toml uv.lock ./
+# MapProxy itself is installed from the patched source below, not from the lock
+RUN uv export --frozen --no-emit-project --no-emit-package mapproxy -o requirements.txt
 
 # Builder stage
 FROM debian:${DEBIAN_VERSION} AS builder
 
 ARG PYTHON_VERSION
 ARG MAPPROXY_VERSION
+ARG MAPPROXY_COMMIT
 
 # Install build dependencies
 RUN apt-get update && \
@@ -18,26 +28,25 @@ RUN apt-get update && \
     python3-pip \
     git \
     patch \
-    curl \
     && rm -rf /var/lib/apt/lists/*
 
 # Download MapProxy source to apply the patch for proj4 issue with MapNik
 WORKDIR /tmp
 RUN git clone https://github.com/mapproxy/mapproxy.git && \
     cd mapproxy && \
-    git checkout ${MAPPROXY_VERSION}
+    git checkout --detach ${MAPPROXY_COMMIT} && \
+    echo "MapProxy ${MAPPROXY_VERSION} at $(git rev-parse HEAD)"
 
-# Download and apply the patch
-RUN curl -sSL https://salsa.debian.org/debian-gis-team/mapproxy/-/raw/master/debian/patches/mapnik.patch -o /tmp/mapnik.patch && \
-    cd /tmp/mapproxy && \
-    patch -p1 < /tmp/mapnik.patch
+# Apply the patch, vendored from Debian's mapproxy packaging (patches/mapnik.patch)
+COPY patches/mapnik.patch /tmp/mapnik.patch
+RUN cd /tmp/mapproxy && patch -p1 < /tmp/mapnik.patch
 
-# Install MapProxy from the patched source
+# Install the locked Python dependencies (hash-checked), then MapProxy from the
+# patched source without resolving anything further
+COPY --from=uv /swi/requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir --break-system-packages --require-hashes -r /tmp/requirements.txt
 WORKDIR /tmp/mapproxy
-RUN pip install --no-cache-dir --break-system-packages .
-
-# Install other Python packages
-RUN pip install --no-cache-dir --break-system-packages uwsgi azure-storage-blob boto3 redis
+RUN pip install --no-cache-dir --break-system-packages --no-deps .
 
 # Copy configuration files and scripts
 COPY config.py /mapproxy/

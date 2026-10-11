@@ -1,0 +1,15 @@
+Description: Patch to work with latest mapnik proj support
+Author: Angelos Tzotsos <gcpp.kalxas@gmail.com>
+Forwarded: https://github.com/mapproxy/mapproxy/issues/538#issuecomment-1205046859
+
+--- a/mapproxy/source/mapnik.py
++++ b/mapproxy/source/mapnik.py
+@@ -231,7 +231,7 @@ class MapnikSource(MapLayer):
+ 
+         m = self.map_obj(mapfile)
+         m.resize(query.size[0], query.size[1])
+-        m.srs = '+init=%s' % str(query.srs.srs_code.lower())
++        m.srs = str(query.srs.srs_code.lower())
+         envelope = mapnik.Box2d(*query.bbox)
+         m.zoom_to_box(envelope)
+         data = None
