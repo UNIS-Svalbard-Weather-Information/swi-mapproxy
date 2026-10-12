@@ -60,6 +60,11 @@ FROM debian:trixie-slim
 
 ARG PYTHON_VERSION
 ARG MAPNIK_VERSION
+# The project reserves uids above 9000. Every SWI image that shares a volume with this one
+# (the cron jobs that write the map data and metadata) uses the same uid and gid, so the
+# files this server reads and writes always have the same owner.
+ARG APP_UID=9001
+ARG APP_GID=9001
 
 # Install runtime dependencies
 RUN apt-get update && \
@@ -85,7 +90,8 @@ COPY --from=builder /usr/local/bin /usr/local/bin
 COPY --from=builder /mapproxy /mapproxy
 
 # Create a non-root user and group
-RUN useradd -m mapproxy && \
+RUN groupadd --gid "${APP_GID}" mapproxy && \
+    useradd --uid "${APP_UID}" --gid "${APP_GID}" -m mapproxy && \
     mkdir -p /mapproxy/config /mapproxy/user_config /mapproxy/data /mapproxy/metadata /mapproxy/mbtiles && \
     chown -R mapproxy:mapproxy /mapproxy
 
